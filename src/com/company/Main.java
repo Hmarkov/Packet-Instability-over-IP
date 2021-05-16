@@ -1,11 +1,13 @@
 package com.company;
 
-
-
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -13,80 +15,48 @@ import java.util.regex.Matcher;
 
 public class Main {
     static List<Ping> pings = new ArrayList<>();
-    //NHS,LOUVRE,NASA,AIRCANADA
     static List<Ping> nhs = new ArrayList<>();
     static List<Ping> louvre = new ArrayList<>();
     static List<Ping> nasa = new ArrayList<>();
     static List<Ping> aircanada = new ArrayList<>();
-
+    static List<List<Ping>> lists = new ArrayList<>();
 
     static List<Trace> traces = new ArrayList<>();
-    static List<Trace> tracenhs = new ArrayList<>();
-    static List<Trace> tracelouvre = new ArrayList<>();
-    static List<Trace> tracenasa = new ArrayList<>();
-    static List<Trace> traceaircanada = new ArrayList<>();
+//    static List<Trace> tracenhs = new ArrayList<>();
+//    static List<Trace> tracelouvre = new ArrayList<>();
+//    static List<Trace> tracenasa = new ArrayList<>();
+//    static List<Trace> traceaircanada = new ArrayList<>();
     public static Trace record;
     public static List<String> lines;
     public static List<String> listtrace;
-    private static  String [] columns={"Destination IP","Packet Transmitted","Packet Received","Loss Rate","Time","Rtt_min","Rtt_avg","Rtt_max","Rtt_mdev"};
+    private static String[] columns = {"Packets Transmitted", "Packets Received", "Loss Rate", "Time", "Min", "Mean", "Max", "Median"};
 
-    public static void main(String[] args) throws IOException {
+    public static int num=0;
+    public static int rowindex=0;
 
-        String ping= "routetrace.log";
-        String t="t.log";
-        String p= "ping.log";
-        String trace= "traceroute.log";
+    public static void main(String[] args) throws IOException, ParseException {
 
-        //trParcer(trace);
+        String ping = "routetrace.log";
+        String t = "t.log";
+        String p = "ping.log";
+        String trace = "traceroute.log";
+
         //trParcer(trace);
         pingParcer(ping);
-        Workbook wk=new XSSFWorkbook();
-        Sheet sheet=wk.createSheet();
-        Font headerfont=wk.createFont();
-        headerfont.setBold(true);
-        headerfont.setFontHeightInPoints((short) 17);
-        headerfont.setColor(IndexedColors.RED.getIndex());
+        lists.add(nhs);
+        lists.add(louvre);
+        lists.add(nasa);
+        lists.add(aircanada);
+        Excel(lists);
 
-        CellStyle headerCellStyle=wk.createCellStyle();
-        headerCellStyle.setFont(headerfont);
 
-        Row headerRow=sheet.createRow(0);
-
-        for(int i=0;i<columns.length;i++){
-            Cell cell=headerRow.createCell(i);
-            cell.setCellValue(columns[i]);
-            cell.setCellStyle(headerCellStyle);
-        }
-        int rownum=1;
-
-        for(Ping pg:nhs){
-            Row row=sheet.createRow(rownum++);
-            row.createCell(0).setCellValue(pg.destination);
-            row.createCell(1).setCellValue(pg.packet_transmit);
-            row.createCell(2).setCellValue(pg.packet_receive);
-            row.createCell(3).setCellValue(pg.packet_loss_rate);
-            row.createCell(4).setCellValue(pg.time);
-            row.createCell(5).setCellValue(pg.rtt_min);
-            row.createCell(6).setCellValue(pg.rtt_avg);
-            row.createCell(7).setCellValue(pg.rtt_max);
-            row.createCell(8).setCellValue(pg.rtt_mdev);
-
-            for(int i=0;i< columns.length;i++){
-                sheet.autoSizeColumn(i);
-            }
-            FileOutputStream fo=new FileOutputStream("Ping.xlsx");
-            wk.write(fo);
-            fo.close();
-            wk.close();
-
-        }
 
 
     }
     public static void Storage(String filename) throws IOException {lines = Files.readAllLines(Paths.get(filename));}
 
 
-    public static void pingParcer(String filename) throws IOException {
+    public static void pingParcer(String filename) throws IOException, ParseException {
         Pattern pingpattern = Pattern.compile("(\\d+)\\spackets\\stransmitted.*?(\\d+)\\sreceived.*?(\\d+%)\\spacket\\sloss.*?time\\s(\\d+[^a-z]).*?=\\s([^\\/]*)\\/([^\\/]*)\\/([^\\/]*)\\/(.*?)\\sms",Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
         String destination = null;
         int packet_transmit=0;
@@ -97,6 +67,7 @@ public class Main {
         float rtt_avg=0;
         float rtt_max=0;
         float rtt_mdev=0;
+        NumberFormat defaultFormat = NumberFormat.getPercentInstance();
         Storage(filename);
         ArrayList<String> array=new ArrayList<>();
         String list = String.join("\n", lines );
@@ -108,7 +79,7 @@ public class Main {
             destination=array.get(0);
             packet_transmit=Integer.parseInt(array.get(1));
             packet_receive=Integer.parseInt(array.get(2));
-            packet_loss_rate=Float.parseFloat(String.valueOf(array.get(3).indexOf(0)));
+            packet_loss_rate=Float.parseFloat(String.valueOf(defaultFormat.parse(array.get(3))));
             time=Integer.parseInt(array.get(4));
             rtt_min=Float.parseFloat(array.get(5));
             rtt_avg=Float.parseFloat(array.get(6));
@@ -131,7 +102,6 @@ public class Main {
             aircanada.add(pings.get(i));
         }
 
-        System.out.println(pings);
     }
 
 
@@ -163,6 +133,59 @@ public class Main {
     }
 
 
+    public static void Excel(List<List<Ping>> lists) throws IOException {
+        Workbook wk = new XSSFWorkbook();
+        Sheet sheet = wk.createSheet("Pings");
+        Font headerfont = wk.createFont();
+        headerfont.setBold(true);
+        headerfont.setFontHeightInPoints((short) 15);
+        headerfont.setColor(IndexedColors.RED.getIndex());
+
+        CellStyle headerCellStyle = wk.createCellStyle();
+        headerCellStyle.setFont(headerfont);
+
+        Row headerRow = sheet.createRow(rowindex);
+
+        for (int i = 0; i < columns.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(columns[i]);
+            cell.setCellStyle(headerCellStyle);
+        }
+        int rownum = 1;
+        Iterator<List<Ping>> iterator=lists.iterator();
+        while(iterator.hasNext()){
+            for (Ping pg : iterator.next()) {
+                Row row = sheet.createRow(rownum++);
+                row.createCell(0).setCellValue(pg.packet_transmit);
+                row.createCell(1).setCellValue(pg.packet_receive);
+                row.createCell(2).setCellValue(pg.packet_loss_rate);
+                row.createCell(3).setCellValue(pg.time);
+                row.createCell(4).setCellValue(pg.rtt_min);
+                row.createCell(5).setCellValue(pg.rtt_avg);
+                row.createCell(6).setCellValue(pg.rtt_max);
+                row.createCell(7).setCellValue(pg.rtt_mdev);
+            }
+            Row r = sheet.createRow(rownum);
+            rownum++;
+            if(iterator.hasNext()) {
+                for (int i = 0; i < columns.length; i++) {
+                    Cell cell = r.createCell(i);
+                    cell.setCellValue(columns[i]);
+                    cell.setCellStyle(headerCellStyle);
+                }
+            }
+        }
+        for(int i=0;i< columns.length;i++){
+            sheet.autoSizeColumn(i);
+        }
+        FileOutputStream fos=new FileOutputStream("doc.xlsx");
+        num++;
+        wk.write(fos);
+
+        fos.close();
+        wk.close();
+
+    }
 
 
 }
