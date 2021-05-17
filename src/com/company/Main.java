@@ -3,6 +3,7 @@ package com.company;
 import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CityResponse;
+import com.maxmind.geoip2.record.City;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -18,47 +19,75 @@ import java.util.regex.Matcher;
 
 
 public class Main {
+    //ws1=nhs;ws2=louvre;ws3=nasa;ws4=canada
     static List<Ping> pings = new ArrayList<>();
-    static List<Ping> nhs = new ArrayList<>();
-    static List<Ping> louvre = new ArrayList<>();
-    static List<Ping> nasa = new ArrayList<>();
-    static List<Ping> aircanada = new ArrayList<>();
-    static List<List<Ping>> lists = new ArrayList<>();
+    static List<Ping> ws1 = new ArrayList<>();
+    static List<Ping> ws2 = new ArrayList<>();
+    static List<Ping> ws3 = new ArrayList<>();
+    static List<Ping> ws4 = new ArrayList<>();
+
+    static List<List<Ping>> pinglists = new ArrayList<>();
 
     static List<Trace> traces = new ArrayList<>();
-//    static List<Trace> tracenhs = new ArrayList<>();
-//    static List<Trace> tracelouvre = new ArrayList<>();
-//    static List<Trace> tracenasa = new ArrayList<>();
-//    static List<Trace> traceaircanada = new ArrayList<>();
-    public static Trace record;
+    static List<Trace> www1 = new ArrayList<>();
+    static List<Trace> www2 = new ArrayList<>();
+    static List<Trace> www3 = new ArrayList<>();
+    static List<Trace> www4 = new ArrayList<>();
+
+    static List<CityTrace> website1 = new ArrayList<>();
+    static List<CityTrace> website2 = new ArrayList<>();
+    static List<CityTrace> website3 = new ArrayList<>();
+    static List<CityTrace> website4 = new ArrayList<>();
+
     public static List<String> lines;
-    public static List<String> listtrace;
     private static String[] columns = {"Packets Transmitted", "Packets Received", "Loss Rate", "Time", "Min", "Mean", "Max", "Median"};
 
     public static int num=0;
     public static int rowindex=0;
 
-    public static void main(String[] args) throws IOException, ParseException {
-
+    public static void main(String[] args) throws IOException, ParseException, GeoIp2Exception {
         String ping = "routetrace.log";
-        String t = "t.log";
-        String p = "ping.log";
-        String trace = "traceroute.log";
-
+        String trace = "t.log";
         trParcer(trace);
         //pingParcer(ping);
-        lists.add(nhs);
-        lists.add(louvre);
-        lists.add(nasa);
-        lists.add(aircanada);
-        Excel(lists);
 
+        for(int i=0;i<pings.size();i+=4){
+            ws1.add(pings.get(i));
+        }
+        for(int i=1;i<pings.size();i+=4){
+            ws2.add(pings.get(i));
+        }
+        for(int i=2;i<pings.size();i+=4){
+            ws3.add(pings.get(i));
+        }
+        for(int i=3;i<pings.size();i+=4){
+            ws4.add(pings.get(i));
+        }
 
+        pinglists.add(ws1);
+        pinglists.add(ws2);
+        pinglists.add(ws3);
+        pinglists.add(ws4);
+        Excel(pinglists);
+
+        for(int i=1;i<traces.size();i+=4){
+            www1.add(traces.get(i));
+        }
+        for(int i=2;i<traces.size();i+=4){
+            www2.add(traces.get(i));
+        }
+        for(int i=3;i<traces.size();i+=4){
+            www3.add(traces.get(i));
+        }
+        for(int i=4;i<traces.size();i+=4){
+            www4.add(traces.get(i));
+        }
+
+        Cityspopulate();
 
 
     }
     public static void Storage(String filename) throws IOException {lines = Files.readAllLines(Paths.get(filename));}
-
 
     public static void pingParcer(String filename) throws IOException, ParseException {
         Pattern pingpattern = Pattern.compile("(\\d+)\\spackets\\stransmitted.*?(\\d+)\\sreceived.*?(\\d+%)\\spacket\\sloss.*?time\\s(\\d+[^a-z]).*?=\\s([^\\/]*)\\/([^\\/]*)\\/([^\\/]*)\\/(.*?)\\sms",Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
@@ -93,27 +122,13 @@ public class Main {
             pings.add(p);
             array.clear();
         }
-        for(int i=0;i<pings.size();i+=4){
-            nhs.add(pings.get(i));
-        }
-        for(int i=1;i<pings.size();i+=4){
-            louvre.add(pings.get(i));
-        }
-        for(int i=2;i<pings.size();i+=4){
-            nasa.add(pings.get(i));
-        }
-        for(int i=4;i<pings.size();i+=4){
-            aircanada.add(pings.get(i));
-        }
+
 
     }
-
-
 
     public static void trParcer(String filename) throws IOException {
         Pattern tracepattern = Pattern.compile("((?:[0-9]{1,3}\\.){3}[0-9]{1,3})",Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
         Pattern traceroute = Pattern.compile("traceroute",Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
-
         Storage(filename);
         ArrayList<String> array = new ArrayList<>();
         ArrayList<String> ip=new ArrayList<>();
@@ -132,8 +147,6 @@ public class Main {
                 array.clear();
             }
         }
-
-        System.out.println(traces);
     }
 
 
@@ -191,19 +204,49 @@ public class Main {
 
     }
 
-    public void Location(String ip) throws IOException, GeoIp2Exception {
-        File database = new File("C:/Users/HMarkov/Documents/geo/GeoLite2-City_20210511/GeoLite2-City.mmdb");
+    public static Object Locateip(String ip) throws IOException, GeoIp2Exception {
+        if(ip.contains("10.0.0.1")){
+            return "Private IP address";
+        }else {
+            File database = new File("C:/Users/HMarkov/Documents/geo/GeoLite2-City_20210511/GeoLite2-City.mmdb");
+            DatabaseReader reader = new DatabaseReader.Builder(database).build();
+            InetAddress ipAddress = InetAddress.getByName(ip);
+            CityResponse response = reader.city(ipAddress);
+            City city = response.getCity();
+            return city.getName();
+        }
+    }
 
-// This creates the DatabaseReader object. To improve performance, reuse
-// the object across lookups. The object is thread-safe.
-        DatabaseReader reader = new DatabaseReader.Builder(database).build();
-
-        InetAddress ipAddress = InetAddress.getByName(ip);
-
-
-        CityResponse response = reader.city(ipAddress);
-
-
+    public static void Cityspopulate() throws IOException, GeoIp2Exception {
+        ArrayList<String>array = new ArrayList<>();
+        for(Trace t: www1){
+            for(int i=0;i<t.IPaddress.size();i++){
+                array.add((String) Locateip(t.IPaddress.get(i)));
+            }
+            website1.add(new CityTrace(array));
+            array=new ArrayList<>();
+        }
+        for(Trace t: www2){
+            for(int i=0;i<t.IPaddress.size();i++){
+                array.add((String) Locateip(t.IPaddress.get(i)));
+            }
+            website2.add(new CityTrace(array));
+            array=new ArrayList<>();
+        }
+        for(Trace t: www3){
+            for(int i=0;i<t.IPaddress.size();i++){
+                array.add((String) Locateip(t.IPaddress.get(i)));
+            }
+            website3.add(new CityTrace(array));
+            array=new ArrayList<>();
+        }
+        for(Trace t: www4){
+            for(int i=0;i<t.IPaddress.size();i++){
+                array.add((String) Locateip(t.IPaddress.get(i)));
+            }
+            website4.add(new CityTrace(array));
+            array=new ArrayList<>();
+        }
     }
 
 
@@ -254,5 +297,10 @@ class Trace {
         this.IPaddress = IPaddress;
     }
 }
-
+class CityTrace {
+    ArrayList<String> CityName;
+    public CityTrace(ArrayList<String> CityName) {
+        this.CityName = CityName;
+    }
+}
 
