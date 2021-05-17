@@ -10,5 +10,6 @@
     <orderEntry type="library" name="poi-5.0.0" level="project" />
     <orderEntry type="library" name="lib" level="project" />
     <orderEntry type="library" name="ooxml-lib" level="project" />
+    <orderEntry type="library" name="lib1" level="project" />
   </component>
 </module>

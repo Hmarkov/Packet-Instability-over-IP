@@ -1,9 +1,13 @@
 package com.company;
 
+import com.maxmind.geoip2.DatabaseReader;
+import com.maxmind.geoip2.exception.GeoIp2Exception;
+import com.maxmind.geoip2.model.CityResponse;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
@@ -41,8 +45,8 @@ public class Main {
         String p = "ping.log";
         String trace = "traceroute.log";
 
-        //trParcer(trace);
-        pingParcer(ping);
+        trParcer(trace);
+        //pingParcer(ping);
         lists.add(nhs);
         lists.add(louvre);
         lists.add(nasa);
@@ -187,6 +191,21 @@ public class Main {
 
     }
 
+    public void Location(String ip) throws IOException, GeoIp2Exception {
+        File database = new File("C:/Users/HMarkov/Documents/geo/GeoLite2-City_20210511/GeoLite2-City.mmdb");
+
+// This creates the DatabaseReader object. To improve performance, reuse
+// the object across lookups. The object is thread-safe.
+        DatabaseReader reader = new DatabaseReader.Builder(database).build();
+
+        InetAddress ipAddress = InetAddress.getByName(ip);
+
+
+        CityResponse response = reader.city(ipAddress);
+
+
+    }
+
 
 }
 //NHS,LOUVRE,NASA,AIRCANADA
@@ -230,42 +249,9 @@ class Ping{
     }
 }
 class Trace {
-    //    int[] Hop;
-//    String[] Location;
     ArrayList<String> IPaddress;
-    ArrayList<Float> rtt1;
-    ArrayList<Float> rtt2;
-    ArrayList<Float> rtt3;
-
-    public Trace(String ip, float rtt1, float rtt2, float rtt3) {
-    }
-
-    @Override
-    public String toString() {
-        return "Trace{" +
-                "IPaddress='" + IPaddress + '\'' +
-                ", rtt1=" + rtt1 +
-                ", rtt2=" + rtt2 +
-                ", rtt3=" + rtt3 +
-                '}';
-    }
-
-
-    // public Trace(int[] Hop, String[] Location, String[] IPaddress, float[] rtt1, float[] rtt2, float[] rtt3) {
-    public Trace(ArrayList<String> IPaddress, ArrayList<Float> rtt1, ArrayList<Float> rtt2, ArrayList<Float> rtt3) {
-        this.IPaddress = IPaddress;
-        this.rtt1 = rtt1;
-        this.rtt2 = rtt2;
-        this.rtt3 = rtt3;
-
-    }
     public Trace(ArrayList<String> IPaddress) {
         this.IPaddress = IPaddress;
-    }
-
-    public Trace() {
-
-
     }
 }
 
