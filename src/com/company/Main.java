@@ -21,6 +21,7 @@ import java.util.regex.Matcher;
 public class Main {
     //ws1=nhs;ws2=louvre;ws3=nasa;ws4=canada
     static List<Ping> pings = new ArrayList<>();
+    static List<Ping> filepings = new ArrayList<>();
     static List<Ping> ws1 = new ArrayList<>();
     static List<Ping> ws2 = new ArrayList<>();
     static List<Ping> ws3 = new ArrayList<>();
@@ -40,27 +41,30 @@ public class Main {
     static List<CityTrace> website4 = new ArrayList<>();
 
     public static List<String> lines;
+    public static List<String> filelines;
     private static String[] columns = {"Packets Transmitted", "Packets Received", "Loss Rate", "Time", "Min", "Mean", "Max", "Median"};
 
     public static int num=0;
+    public static int numberwebsites=4;
     public static int rowindex=0;
 
     public static void main(String[] args) throws IOException, ParseException, GeoIp2Exception {
-        String ping = "routetrace.log";
-        String trace = "t.log";
-        trParcer(trace);
-        //pingParcer(ping);
-
-        for(int i=0;i<pings.size();i+=4){
+        String ping = "newping.log";
+        String trace = "newtrace.log";
+        String filesping = "3Dlogfile.log";
+        TraceParser(trace);
+        PingParser(ping);
+        FileParser(filesping);
+        for(int i=0;i<pings.size();i+=numberwebsites){
             ws1.add(pings.get(i));
         }
-        for(int i=1;i<pings.size();i+=4){
+        for(int i=1;i<pings.size();i+=numberwebsites){
             ws2.add(pings.get(i));
         }
-        for(int i=2;i<pings.size();i+=4){
+        for(int i=2;i<pings.size();i+=numberwebsites){
             ws3.add(pings.get(i));
         }
-        for(int i=3;i<pings.size();i+=4){
+        for(int i=3;i<pings.size();i+=numberwebsites){
             ws4.add(pings.get(i));
         }
 
@@ -68,18 +72,19 @@ public class Main {
         pinglists.add(ws2);
         pinglists.add(ws3);
         pinglists.add(ws4);
-        Excel(pinglists);
+        Excel(pinglists,"pings.xlsx");
+        Excel(Collections.singletonList(filepings),"downloadpings.xlsx");
 
-        for(int i=1;i<traces.size();i+=4){
+        for(int i=1;i<traces.size();i+=numberwebsites){
             www1.add(traces.get(i));
         }
-        for(int i=2;i<traces.size();i+=4){
+        for(int i=2;i<traces.size();i+=numberwebsites){
             www2.add(traces.get(i));
         }
-        for(int i=3;i<traces.size();i+=4){
+        for(int i=3;i<traces.size();i+=numberwebsites){
             www3.add(traces.get(i));
         }
-        for(int i=4;i<traces.size();i+=4){
+        for(int i=4;i<traces.size();i+=numberwebsites){
             www4.add(traces.get(i));
         }
 
@@ -88,8 +93,47 @@ public class Main {
 
     }
     public static void Storage(String filename) throws IOException {lines = Files.readAllLines(Paths.get(filename));}
+    public static void FileStorage(String filename) throws IOException {filelines = Files.readAllLines(Paths.get(filename));}
 
-    public static void pingParcer(String filename) throws IOException, ParseException {
+
+    public static void FileParser(String filename) throws IOException, ParseException {
+        Pattern pingpattern = Pattern.compile("(\\d+)\\spackets\\stransmitted.*?(\\d+)\\sreceived.*?(\\d+%)\\spacket\\sloss.*?time\\s(\\d+[^a-z]).*?=\\s([^\\/]*)\\/([^\\/]*)\\/([^\\/]*)\\/(.*?)\\sms",Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
+        String destination = null;
+        int packet_transmit=0;
+        int packet_receive=0;
+        float packet_loss_rate=0;
+        int time=0;
+        float rtt_min=0;
+        float rtt_avg=0;
+        float rtt_max=0;
+        float rtt_mdev=0;
+        NumberFormat defaultFormat = NumberFormat.getPercentInstance();
+        FileStorage(filename);
+        ArrayList<String> array=new ArrayList<>();
+        String list = String.join("\n", filelines );
+        Matcher m = pingpattern.matcher(list);
+        while (m.find()){
+            for( int i= 0; i < m.groupCount()+1; i++ ){
+                array.add(m.group(i));
+            }
+            destination=array.get(0);
+            packet_transmit=Integer.parseInt(array.get(1));
+            packet_receive=Integer.parseInt(array.get(2));
+            packet_loss_rate=Float.parseFloat(String.valueOf(defaultFormat.parse(array.get(3))));
+            time=Integer.parseInt(array.get(4));
+            rtt_min=Float.parseFloat(array.get(5));
+            rtt_avg=Float.parseFloat(array.get(6));
+            rtt_max=Float.parseFloat(array.get(7));
+            rtt_mdev=Float.parseFloat(array.get(8));
+            Ping p=new Ping(destination,packet_transmit,packet_receive,packet_loss_rate*100,time,rtt_min,rtt_avg,rtt_max,rtt_mdev);
+            filepings.add(p);
+            array.clear();
+        }
+        System.out.println(filepings);
+    }
+
+
+    public static void PingParser(String filename) throws IOException, ParseException {
         Pattern pingpattern = Pattern.compile("(\\d+)\\spackets\\stransmitted.*?(\\d+)\\sreceived.*?(\\d+%)\\spacket\\sloss.*?time\\s(\\d+[^a-z]).*?=\\s([^\\/]*)\\/([^\\/]*)\\/([^\\/]*)\\/(.*?)\\sms",Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
         String destination = null;
         int packet_transmit=0;
@@ -118,15 +162,16 @@ public class Main {
             rtt_avg=Float.parseFloat(array.get(6));
             rtt_max=Float.parseFloat(array.get(7));
             rtt_mdev=Float.parseFloat(array.get(8));
-            Ping p=new Ping(destination,packet_transmit,packet_receive,packet_loss_rate,time,rtt_min,rtt_avg,rtt_max,rtt_mdev);
+            Ping p=new Ping(destination,packet_transmit,packet_receive,packet_loss_rate*100,time,rtt_min,rtt_avg,rtt_max,rtt_mdev);
             pings.add(p);
             array.clear();
         }
-
-
     }
 
-    public static void trParcer(String filename) throws IOException {
+
+
+
+    public static void TraceParser(String filename) throws IOException {
         Pattern tracepattern = Pattern.compile("((?:[0-9]{1,3}\\.){3}[0-9]{1,3})",Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
         Pattern traceroute = Pattern.compile("traceroute",Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
         Storage(filename);
@@ -150,7 +195,7 @@ public class Main {
     }
 
 
-    public static void Excel(List<List<Ping>> lists) throws IOException {
+    public static void Excel(List<List<Ping>> lists,String filename) throws IOException {
         Workbook wk = new XSSFWorkbook();
         Sheet sheet = wk.createSheet("Pings");
         Font headerfont = wk.createFont();
@@ -195,14 +240,17 @@ public class Main {
         for(int i=0;i< columns.length;i++){
             sheet.autoSizeColumn(i);
         }
-        FileOutputStream fos=new FileOutputStream("doc.xlsx");
+        FileOutputStream fos=new FileOutputStream(filename);
         num++;
         wk.write(fos);
-
         fos.close();
         wk.close();
 
     }
+
+
+
+
 
     public static Object Locateip(String ip) throws IOException, GeoIp2Exception {
         if(ip.contains("10.0.0.1")){
