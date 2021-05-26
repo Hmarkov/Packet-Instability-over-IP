@@ -19,7 +19,6 @@ import java.util.regex.Matcher;
 
 
 public class Main {
-    //ws1=nhs;ws2=louvre;ws3=nasa;ws4=canada
     static List<Ping> pings = new ArrayList<>();
     static List<Ping> filepings = new ArrayList<>();
     static List<Ping> ws1 = new ArrayList<>();
@@ -30,15 +29,15 @@ public class Main {
     static List<List<Ping>> pinglists = new ArrayList<>();
 
     static List<Trace> traces = new ArrayList<>();
-    static List<Trace> www1 = new ArrayList<>();
-    static List<Trace> www2 = new ArrayList<>();
-    static List<Trace> www3 = new ArrayList<>();
-    static List<Trace> www4 = new ArrayList<>();
+    static List<Trace> ips1 = new ArrayList<>();
+    static List<Trace> ips2 = new ArrayList<>();
+    static List<Trace> ips3 = new ArrayList<>();
+    static List<Trace> ips4 = new ArrayList<>();
 
-    static List<CityTrace> website1 = new ArrayList<>();
-    static List<CityTrace> website2 = new ArrayList<>();
-    static List<CityTrace> website3 = new ArrayList<>();
-    static List<CityTrace> website4 = new ArrayList<>();
+    static List<CityTrace> citywebsite1 = new ArrayList<>();
+    static List<CityTrace> citywebsite2 = new ArrayList<>();
+    static List<CityTrace> citywebsite3 = new ArrayList<>();
+    static List<CityTrace> citywebsite4 = new ArrayList<>();
 
     public static List<String> lines;
     public static List<String> filelines;
@@ -55,38 +54,10 @@ public class Main {
         TraceParser(trace);
         PingParser(ping);
         FileParser(filesping);
-        for(int i=0;i<pings.size();i+=numberwebsites){
-            ws1.add(pings.get(i));
-        }
-        for(int i=1;i<pings.size();i+=numberwebsites){
-            ws2.add(pings.get(i));
-        }
-        for(int i=2;i<pings.size();i+=numberwebsites){
-            ws3.add(pings.get(i));
-        }
-        for(int i=3;i<pings.size();i+=numberwebsites){
-            ws4.add(pings.get(i));
-        }
 
-        pinglists.add(ws1);
-        pinglists.add(ws2);
-        pinglists.add(ws3);
-        pinglists.add(ws4);
         Excel(pinglists,"pings.xlsx");
-        Excel(Collections.singletonList(filepings),"downloadpings.xlsx");
 
-        for(int i=1;i<traces.size();i+=numberwebsites){
-            www1.add(traces.get(i));
-        }
-        for(int i=2;i<traces.size();i+=numberwebsites){
-            www2.add(traces.get(i));
-        }
-        for(int i=3;i<traces.size();i+=numberwebsites){
-            www3.add(traces.get(i));
-        }
-        for(int i=4;i<traces.size();i+=numberwebsites){
-            www4.add(traces.get(i));
-        }
+        Excel(Collections.singletonList(filepings),"downloadpings.xlsx");
 
         Cityspopulate();
 
@@ -129,7 +100,6 @@ public class Main {
             filepings.add(p);
             array.clear();
         }
-        System.out.println(filepings);
     }
 
 
@@ -166,6 +136,23 @@ public class Main {
             pings.add(p);
             array.clear();
         }
+        for(int i=0;i<pings.size();i+=numberwebsites){
+            ws1.add(pings.get(i));
+        }
+        for(int i=1;i<pings.size();i+=numberwebsites){
+            ws2.add(pings.get(i));
+        }
+        for(int i=2;i<pings.size();i+=numberwebsites){
+            ws3.add(pings.get(i));
+        }
+        for(int i=3;i<pings.size();i+=numberwebsites){
+            ws4.add(pings.get(i));
+        }
+
+        pinglists.add(ws1);
+        pinglists.add(ws2);
+        pinglists.add(ws3);
+        pinglists.add(ws4);
     }
 
 
@@ -191,6 +178,18 @@ public class Main {
                 ip.add(array.get(1));
                 array.clear();
             }
+        }
+        for(int i=1;i<traces.size();i+=numberwebsites){
+            ips1.add(traces.get(i));
+        }
+        for(int i=2;i<traces.size();i+=numberwebsites){
+            ips2.add(traces.get(i));
+        }
+        for(int i=3;i<traces.size();i+=numberwebsites){
+            ips3.add(traces.get(i));
+        }
+        for(int i=4;i<traces.size();i+=numberwebsites){
+            ips4.add(traces.get(i));
         }
     }
 
@@ -267,39 +266,39 @@ public class Main {
 
     public static void Cityspopulate() throws IOException, GeoIp2Exception {
         ArrayList<String>array = new ArrayList<>();
-        for(Trace t: www1){
+        for(Trace t: ips1){
             for(int i=0;i<t.IPaddress.size();i++){
                 array.add((String) Locateip(t.IPaddress.get(i)));
             }
-            website1.add(new CityTrace(array));
+            citywebsite1.add(new CityTrace(array));
             array=new ArrayList<>();
         }
-        for(Trace t: www2){
+        for(Trace t: ips2){
             for(int i=0;i<t.IPaddress.size();i++){
                 array.add((String) Locateip(t.IPaddress.get(i)));
             }
-            website2.add(new CityTrace(array));
+            citywebsite2.add(new CityTrace(array));
             array=new ArrayList<>();
         }
-        for(Trace t: www3){
+        for(Trace t: ips3){
             for(int i=0;i<t.IPaddress.size();i++){
                 array.add((String) Locateip(t.IPaddress.get(i)));
             }
-            website3.add(new CityTrace(array));
+            citywebsite3.add(new CityTrace(array));
             array=new ArrayList<>();
         }
-        for(Trace t: www4){
+        for(Trace t: ips4){
             for(int i=0;i<t.IPaddress.size();i++){
                 array.add((String) Locateip(t.IPaddress.get(i)));
             }
-            website4.add(new CityTrace(array));
+            citywebsite4.add(new CityTrace(array));
             array=new ArrayList<>();
         }
     }
 
 
 }
-//NHS,LOUVRE,NASA,AIRCANADA
+
 class Ping{
 
     String destination;
@@ -322,21 +321,6 @@ class Ping{
         this.rtt_avg=rtt_avg;
         this.rtt_max=rtt_max;
         this.rtt_mdev=rtt_mdev;
-    }
-
-    @Override
-    public String toString() {
-        return "Ping{" +
-                "destination='" + destination + '\'' +
-                ", packet_transmit=" + packet_transmit +
-                ", packet_receive=" + packet_receive +
-                ", packet_loss_rate=" + packet_loss_rate +
-                ", time=" + time +
-                ", rtt_min=" + rtt_min +
-                ", rtt_avg=" + rtt_avg +
-                ", rtt_max=" + rtt_max +
-                ", rtt_mdev=" + rtt_mdev +
-                '}';
     }
 }
 class Trace {
