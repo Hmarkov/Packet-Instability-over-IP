@@ -1,12 +1,10 @@
 package com.company;
-
 import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CityResponse;
 import com.maxmind.geoip2.record.City;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-
 import java.io.*;
 import java.net.InetAddress;
 import java.nio.file.Files;
@@ -17,31 +15,45 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
+/**
+ * Automated program to visualize and return excel tables with ping information
+ */
 
 public class Main {
-    static List<Ping> pings = new ArrayList<>();
-    static List<Ping> filepings = new ArrayList<>();
+    static List<Ping> pings = new ArrayList<>(); //Universal List to save all the pings from a given file used for the one week website ping
+    static List<Ping> filepings = new ArrayList<>(); // same as before just used to contain the ftp ping result
+    /**
+     * Custom arraylists used to select records from the "pings" arraylist and associate it to the respected arraylist
+     */
     static List<Ping> ws1 = new ArrayList<>();
     static List<Ping> ws2 = new ArrayList<>();
     static List<Ping> ws3 = new ArrayList<>();
     static List<Ping> ws4 = new ArrayList<>();
 
-    static List<List<Ping>> pinglists = new ArrayList<>();
+    static List<List<Ping>> pinglists = new ArrayList<>();//Arraylist of the arraylists containing the lists above
 
-    static List<Trace> traces = new ArrayList<>();
+    static List<Trace> traces = new ArrayList<>();//Universal List to save all the traces from a given file used for the one week website traceroute
+    /**
+     * Custom arraylists used to select records from the "traces" arraylist and associate it to the respected arraylist
+     */
     static List<Trace> ips1 = new ArrayList<>();
     static List<Trace> ips2 = new ArrayList<>();
     static List<Trace> ips3 = new ArrayList<>();
     static List<Trace> ips4 = new ArrayList<>();
-
+    /**
+     * Custom arraylists used to convert all the ip lists in their respective city names using the database
+     */
     static List<CityTrace> citywebsite1 = new ArrayList<>();
     static List<CityTrace> citywebsite2 = new ArrayList<>();
     static List<CityTrace> citywebsite3 = new ArrayList<>();
     static List<CityTrace> citywebsite4 = new ArrayList<>();
 
+    /**
+     * Storage containers when reading the files
+     */
     public static List<String> lines;
     public static List<String> filelines;
-    private static String[] columns = {"Packets Transmitted", "Packets Received", "Loss Rate", "Time", "Min", "Mean", "Max", "Median"};
+    private static String[] columns = {"Packets Transmitted", "Packets Received", "Loss Rate", "Time", "Min", "Mean", "Max", "Median"};//excel columns
 
     public static int num=0;
     public static int numberwebsites=4;
@@ -54,19 +66,41 @@ public class Main {
         TraceParser(trace);
         PingParser(ping);
         FileParser(filesping);
-
         Excel(pinglists,"pings.xlsx");
-
         Excel(Collections.singletonList(filepings),"downloadpings.xlsx");
-
         Cityspopulate();
-
+        System.out.println("Type a number 1-4 to visualize a traceroute of one the four websites:");
+        Scanner in = new Scanner(System.in);
+        int i = in.nextInt();
+        switch (i){
+            case 1:
+                System.out.println(citywebsite1);
+                break;
+            case 2:
+                System.out.println(citywebsite2);
+                break;
+            case 3:
+                System.out.println(citywebsite3);
+                break;
+            case 4:
+                System.out.println(citywebsite4);
+                break;
+        }
 
     }
+
+    /**
+     *Fast way to read the log files and store them in the repective arraylists
+     */
     public static void Storage(String filename) throws IOException {lines = Files.readAllLines(Paths.get(filename));}
     public static void FileStorage(String filename) throws IOException {filelines = Files.readAllLines(Paths.get(filename));}
 
-
+    /**
+     * Ping parser without arraylist associating to other arraylist
+     * @param filename
+     * @throws IOException
+     * @throws ParseException
+     */
     public static void FileParser(String filename) throws IOException, ParseException {
         Pattern pingpattern = Pattern.compile("(\\d+)\\spackets\\stransmitted.*?(\\d+)\\sreceived.*?(\\d+%)\\spacket\\sloss.*?time\\s(\\d+[^a-z]).*?=\\s([^\\/]*)\\/([^\\/]*)\\/([^\\/]*)\\/(.*?)\\sms",Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
         String destination = null;
@@ -102,7 +136,12 @@ public class Main {
         }
     }
 
-
+    /**
+     * Ping parser that divides into 4 arraylists and combines them to one
+     * @param filename
+     * @throws IOException
+     * @throws ParseException
+     */
     public static void PingParser(String filename) throws IOException, ParseException {
         Pattern pingpattern = Pattern.compile("(\\d+)\\spackets\\stransmitted.*?(\\d+)\\sreceived.*?(\\d+%)\\spacket\\sloss.*?time\\s(\\d+[^a-z]).*?=\\s([^\\/]*)\\/([^\\/]*)\\/([^\\/]*)\\/(.*?)\\sms",Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
         String destination = null;
@@ -155,9 +194,11 @@ public class Main {
         pinglists.add(ws4);
     }
 
-
-
-
+    /**
+     * Trace Parser that gets a trace record containing ips and devides them into 4 arraylist so later can be used to be converted from ip addresses to city names
+     * @param filename
+     * @throws IOException
+     */
     public static void TraceParser(String filename) throws IOException {
         Pattern tracepattern = Pattern.compile("((?:[0-9]{1,3}\\.){3}[0-9]{1,3})",Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
         Pattern traceroute = Pattern.compile("traceroute",Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
@@ -193,7 +234,12 @@ public class Main {
         }
     }
 
-
+    /**
+     *Function to generated automatically excel file with ping information giver arraylist of ping result records
+     * @param lists
+     * @param filename
+     * @throws IOException
+     */
     public static void Excel(List<List<Ping>> lists,String filename) throws IOException {
         Workbook wk = new XSSFWorkbook();
         Sheet sheet = wk.createSheet("Pings");
@@ -247,10 +293,13 @@ public class Main {
 
     }
 
-
-
-
-
+    /**
+     * Function to read a given string containing an ip address and convert in into a city name or return a null if its not recognised by the database
+     * @param ip
+     * @return
+     * @throws IOException
+     * @throws GeoIp2Exception
+     */
     public static Object Locateip(String ip) throws IOException, GeoIp2Exception {
         if(ip.contains("10.0.0.1")){
             return "Private IP address";
@@ -264,6 +313,11 @@ public class Main {
         }
     }
 
+    /**
+     * Function to populate arraylists calling the function above with city names from ip addresses
+     * @throws IOException
+     * @throws GeoIp2Exception
+     */
     public static void Cityspopulate() throws IOException, GeoIp2Exception {
         ArrayList<String>array = new ArrayList<>();
         for(Trace t: ips1){
@@ -295,12 +349,12 @@ public class Main {
             array=new ArrayList<>();
         }
     }
-
-
 }
 
+/**
+ * Ping class to make a custom object so can be used to create a single record with all the information from the ping result
+ */
 class Ping{
-
     String destination;
     int packet_transmit;
     int packet_receive;
@@ -310,7 +364,6 @@ class Ping{
     float rtt_avg;
     float rtt_max;
     float rtt_mdev;
-
     public Ping(String destination,int packet_transmit,int packet_receive,float packet_loss_rate,int time,float rtt_min,float rtt_avg,float rtt_max,float rtt_mdev){
         this.destination=destination;
         this.packet_transmit=packet_transmit;
@@ -323,16 +376,27 @@ class Ping{
         this.rtt_mdev=rtt_mdev;
     }
 }
+
+/**
+ * Trace class to create a custom arraylist that returns the ip address in string format
+ */
 class Trace {
     ArrayList<String> IPaddress;
     public Trace(ArrayList<String> IPaddress) {
         this.IPaddress = IPaddress;
     }
 }
+
+/**
+ * CityTrace class to create a custom arraylist that returns the City Names in string format
+ */
 class CityTrace {
+    @Override
+    public String toString() {
+        return "CityName=" + CityName+"\n";
+    }
     ArrayList<String> CityName;
     public CityTrace(ArrayList<String> CityName) {
         this.CityName = CityName;
     }
 }
-
